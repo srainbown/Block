@@ -8,15 +8,11 @@
 
 #import "ViewController.h"
 
-//定义一种无返回值的Block类型
-typedef void(^nameBlock)(NSString *);
-//定义一种有返回值无参数列表的Block类型
-typedef int(^numBlock)();
-//定义一种有返回值有参数列表的Block类型
-typedef int (^myBlock)(int,int);
+typedef void(^nameBlock)(NSString *);//定义一种无返回值的Block类型
+typedef int(^numBlock)();//定义一种有返回值无参数列表的Block类型
+typedef int (^myBlock)(int,int);//定义一种有返回值有参数列表的Block类型
 
 @interface ViewController ()
-
 @end
 @implementation ViewController{
     int globalVariable;
@@ -92,9 +88,16 @@ typedef int (^myBlock)(int,int);
  在Block中可以访问静态变量；
  在定义Block时就将静态变量的地址给了Block。
  BlocK可以不用添加__block，直接修改全局变量的值；
+ 静态全局变量也是可以在任何时候以任何状态调用的；
+ 如：函数test_six所示；
  ***
  **
  *
+ 
+ 结论：Block实质上是OC对闭包的对象实现，简单来说Block就是对象。
+      从表层分析，Block是一个类型。
+      从深层分析，Block是OC对象，因为它的结构体中含有isa指针。
+ 
  
  ************************************************************************
  */
@@ -233,7 +236,16 @@ typedef int (^myBlock)(int,int);
     NSLog(@"b == %d",b);
     /*
      原理分析:在局部变量前使用__block修饰，在Block定义时便是将局部变量的指针传给Block变量所指向的结构体，因此在调用Block之前对局部变量进行修改会影响到Block内部的值，同时内部的值也是可以修改的；
+     注意：这里的修改是指整个变量的赋值操作，变更该对象的操作是允许的，比如在不加上__block修饰符的情况下，给在变量Block内部的可变数组添加对象的操作是可以的；
      */
+    NSMutableArray *array = [[NSMutableArray alloc]init];
+    NSLog(@"%@",array);
+    void (^printInt)() = ^{
+        [array addObject:@1];
+    };
+    
+    printInt();
+    NSLog(@"%@",array);
 }
 
 
