@@ -7,12 +7,17 @@
 //
 
 #import "ViewController.h"
+#import "Preson.h"
 
 typedef void(^nameBlock)(NSString *);//定义一种无返回值的Block类型
 typedef int(^numBlock)();//定义一种有返回值无参数列表的Block类型
 typedef int (^myBlock)(int,int);//定义一种有返回值有参数列表的Block类型
 
 @interface ViewController ()
+
+@property (nonatomic, strong) Preson *preson;
+@property (nonatomic, copy) NSString *string;
+
 @end
 @implementation ViewController{
     int globalVariable;
@@ -111,6 +116,20 @@ typedef int (^myBlock)(int,int);//定义一种有返回值有参数列表的Bloc
  
  如果在Block内部使用__strong修饰符的对象类型的自动变量，那么当Block从栈复制到堆的时候，该对象就会被Block所持有；
  所以如果这个对象还同时持有Block的话，就容易发生循环引用；
+ 
+ 常见误区：
+    1.所有Block都会造成循环引用：在Block中，并不是所有的Block都会造成循环引用，比如UIView动画Block，Masonry添加约束Block，AFN网络请求回调Block等。
+        UIView动画Block不会造成循环引用是因为这是类方法，不可能强引用一个类，所以不会造成循环引用。
+        Masonry约束Block不会造成循环引用是因为内部使用的变量是局部变量，Block并没有持有self，在超出它的作用域后就会被销毁。
+        AFN请求回调不会造成循环引用是因为在内部做了处理。Block先是被AFURLSessionManagerTaskDelegate对象持有。而AFURLSessionManagerTaskDelegate对象被mutableTaskDelegatesKeyedByTaskIdentifier字典持有，在Block执行完成后，mutableTaskDelegatesKeyedByTaskIdentifier字典会移除AFURLSessionManagerTaskDelegate对象，这样对象就被释放了，所所以不会造成循环引用。
+    2.Block中只有self会造成循环引用
+        在block中并不只是self会造成循环引用，用下划线调用属性（如_name）也会出现循环引用，效果和使用self是一样的。
+    3.通过__weak __typeof(self) weakSelf = self;可以解决所有Block造成的循环引用
+        大部分情况下，这样使用时可以解决Block循环引用，但是有些情况下这样使用会造成一些问题。比如在Block中延迟执行一些代码，在还没有执行的时候，控制器被销毁了，这样控制器中的对象也会被释放，__weak对象就会变成null,所以会输出null；如：函数
+    4.用self调用带有block的方法会引起循环引用
+        并不是所有通过self调用带有block的方法会引起循环引用，需要看方法内部是否持有self。
+ 如：test_seven所示；
+ 
  
  
  
@@ -305,6 +324,27 @@ typedef int (^myBlock)(int,int);//定义一种有返回值有参数列表的Bloc
      原理分析：在Block定义时便是将静态变量的指针传给Block变量所指向的结构体，因此在调用Block之前对静态变量进行修改会影响Block内部的值，同时内部的值也是可以修改的；
      */
 }
+
+#pragma mark -- seven
+-(void)test_seven{
+
+    _preson = [[Preson alloc]init];
+    _preson.name = @"帝林";
+    __weak __typeof(self) weakSelf = self;
+    [_preson PresonBlock:^{
+        //在延迟执行期间，控制器如果被释放，那么打印出来的就是null，如果执行其他操作，也可能Crash.
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            NSLog(@"%@",weakSelf.preson.name);
+        });
+    }];
+    
+    //并不是所有通过self调用带有block的方法会引起循环引用，需要看方法内部是否持有self。
+    [self dismissViewControllerAnimated:YES completion:^{
+        NSLog(@"%@",self.string);
+    }];
+    
+}
+
 
 
 
