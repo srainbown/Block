@@ -35,6 +35,7 @@ typedef int (^myBlock)(int,int);//定义一种有返回值有参数列表的Bloc
     [self test_four];
     [self test_five];
     [self test_six];
+    [self test_seven];
     
     
 }
@@ -46,7 +47,7 @@ typedef int (^myBlock)(int,int);//定义一种有返回值有参数列表的Bloc
  
  注：Block的声明与赋值只是保存了一段代码段，必须调用才能执行内部代码；
  
- *****   Block的写法  ****************************************************************
+ *****   Block的写法   ****************************************************************
  
  Block变量的声明格式：返回值类型(^Block名字)(参数列表)；
  注：^被称为“脱字符”；
@@ -56,12 +57,12 @@ typedef int (^myBlock)(int,int);//定义一种有返回值有参数列表的Bloc
  在实际使用Block的过程中，我们可能需要重复地声明多个，相同返回值，相同参数列表的Block变量，如果总是重复地编写一长串代码来声明变量会非常繁琐，所以我们可以使用typedef来定义Block类型；
  如：函数test_two所示;
  
- *****   Block作为函数参数  ************************************************************
+ *****   Block作为函数参数   ************************************************************
  
  Block可以作为函数参数；
  如：函数test_three所示；
 
- *****   Block访问变量  ****************************************************************
+ *****   Block访问变量   ****************************************************************
  
  在Block中可以访问局部变量；
  在局部变量前添加__block，这样在定义Block时会将指向局部变量的地址给block，而不添加__block只是将局部变量的值给了Block。如：函数test_four所示；
@@ -78,7 +79,7 @@ typedef int (^myBlock)(int,int);//定义一种有返回值有参数列表的Bloc
  如：函数test_six所示；
 
 
-*****   结论  **************************************************************************
+*****   结论   **************************************************************************
  
  结论：Block实质上是OC对闭包的对象实现，简单来说Block就是对象。
       从表层分析，Block是一个类型。
@@ -112,7 +113,7 @@ typedef int (^myBlock)(int,int);//定义一种有返回值有参数列表的Bloc
     1.任何一个block被复制到堆上时，__block变量也会一并从栈复制到堆上，并被该Block持有；
     2.如果接着有其他Block被复制到堆上的话，被复制的Block会持有block变量，并增加block的引用计数，反过来如果Block被废弃，它所持有的__block也就被释放(不在有block引用它)；
  
-*****   Block的循环引用  ****************************************************************
+*****   Block的循环引用   ****************************************************************
  
  如果在Block内部使用__strong修饰符的对象类型的自动变量，那么当Block从栈复制到堆的时候，该对象就会被Block所持有；
  所以如果这个对象还同时持有Block的话，就容易发生循环引用；
@@ -330,17 +331,23 @@ typedef int (^myBlock)(int,int);//定义一种有返回值有参数列表的Bloc
 
     _preson = [[Preson alloc]init];
     _preson.name = @"帝林";
+    
+    //使用_preson也会造成循环引用
+    [_preson PresonBlock:^{
+        NSLog(@"name == %@",_preson.name);
+    }];
+
     __weak __typeof(self) weakSelf = self;
     [_preson PresonBlock:^{
         //在延迟执行期间，控制器如果被释放，那么打印出来的就是null，如果执行其他操作，也可能Crash.
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-            NSLog(@"%@",weakSelf.preson.name);
+            NSLog(@"name == %@",weakSelf.preson.name);
         });
     }];
     
     //并不是所有通过self调用带有block的方法会引起循环引用，需要看方法内部是否持有self。
     [self dismissViewControllerAnimated:YES completion:^{
-        NSLog(@"%@",self.string);
+        NSLog(@"string == %@",self.string);
     }];
     
 }

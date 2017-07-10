@@ -11,7 +11,7 @@
 @implementation Preson
 
 -(void)PresonBlock:(void (^)())presonBlock{
-
+    NSLog(@"Block调用");
 }
 
 @end
