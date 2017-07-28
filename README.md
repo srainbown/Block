@@ -1,1 +1,11 @@
 # Block
+
+
+因为block强引用了你的self，而你的self没有强引用block，所以不会造成循环引用，由于self被强引用了，所以刚退出页面的时候它不释放，但是等block中的代码执行完之后，block出栈释放了self也就跟着释放了。
+
+此类self不强引用block的情况用不用weakself都行，一般我是习惯直接使用self，看你的业务需求吧，如果你想退出了就立马释放掉self，不关心block中的代码是否执行就可以用weak self，否则就直接使用self就行。
+
+关于怎样判断有循环引用
+1、只要在block中使用了self，self就被该block强引用了
+2、怎样判断self强引用了block，只需判断block是否属于self强引用的一个对象即可（即block属于这个对象，而self强持有这个对象）。 
+
